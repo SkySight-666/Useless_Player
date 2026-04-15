@@ -23,11 +23,11 @@ if(NOT "${CMAKE_SYSROOT}" STREQUAL "")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --sysroot=${CMAKE_SYSROOT}")
 endif()
 
-project(jsapi_bridge C CXX)
+project(player_native C CXX)
 
 set(IOT_UI_SDK_PATH "${CMAKE_SOURCE_DIR}/iot-miniapp-sdk")
 set(MID_LIB_NAME iot_sdk_lib)
-set(LIB_NAME jsapi_bridge)
+set(LIB_NAME player_native)
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/src

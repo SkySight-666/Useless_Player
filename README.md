@@ -10,8 +10,7 @@ musicd 的前端配套播放器（Falcon + Vue + 自定义 C++ JSAPI，使用 `n
 ## C++ 层
 
 - 原生模块名：`player_native`
-- 构建产物：`libs/libjsapi_bridge.so`
-- 依赖库（按机型）：`libs/libcurl.so`、`libs/libsqlite3.so`
+- 构建产物：`libs/libplayer_native.so`
 
 前端通过 `src/utils/shell-api.js` 调用 `player_native.Shell.exec()`，不再依赖 `bridge` 模块。
 

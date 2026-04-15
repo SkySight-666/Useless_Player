@@ -25,8 +25,6 @@ resolve_toolchain_prefix() {
 
 build_native() {
   local build_dir="$ROOT_DIR/jsapi/build/$USELESS_PLAYER_DEVICE"
-  local deps_lib_dir="$ROOT_DIR/jsapi/deps/$USELESS_PLAYER_DEVICE/lib"
-
   if [ ! -d "$ROOT_DIR/jsapi" ]; then
     echo "jsapi directory missing: $ROOT_DIR/jsapi" >&2
     exit 1
@@ -36,11 +34,8 @@ build_native() {
   cmake --build "$build_dir" -j"$(nproc)"
 
   mkdir -p "$ROOT_DIR/libs"
-  cp "$build_dir/libjsapi_bridge.so" "$ROOT_DIR/libs/"
-
-  if [ -d "$deps_lib_dir" ]; then
-    find "$deps_lib_dir" -maxdepth 1 -type f -name '*.so' -exec cp {} "$ROOT_DIR/libs/" \;
-  fi
+  find "$ROOT_DIR/libs" -maxdepth 1 -type f -name '*.so' -delete
+  cp "$build_dir/libplayer_native.so" "$ROOT_DIR/libs/"
 }
 
 build_ui() {
