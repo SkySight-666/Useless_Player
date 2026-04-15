@@ -1,0 +1,36 @@
+{
+  "name": "useless-player",
+  "appid": "8001990000000001",
+  "version": "0.1.0",
+  "description": "musicd frontend companion player",
+  "quickjs": {
+    "version": "20200705",
+    "bigNum": false
+  },
+  "icon": "res/ios_icon.png",
+  "single-js-bundle": false,
+  "scripts": {
+    "patch:toolchain": "bash ./tools/patch_ui_toolchain.sh",
+    "start": "npm run patch:toolchain && aiot-cli preview",
+    "build": "npm run patch:toolchain && aiot-cli -p",
+    "build:prod": "npm run patch:toolchain && aiot-cli -c -q -p",
+    "build:simulator": "npm run patch:toolchain && aiot-cli simulator ./",
+    "check": "npm run patch:toolchain && aiot-cli check"
+  },
+  "keywords": [
+    "iot",
+    "miniapp",
+    "musicd"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^12.1.3",
+    "@vue/compiler-sfc": "^3.5.17",
+    "aiot-vue-cli": "^1.0.32",
+    "vue": "^3.5.17"
+  },
+  "dependencies": {
+    "falcon-ui": "^2.0.2",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "npm@10.9.0"
+}

@@ -1,0 +1,110 @@
+name: Build Multi-Arch (CVI)
+
+on:
+  push:
+    branches: [ main, s6 ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: s6
+            toolchain_url: https://github.com/SkySight-666/arm-buildroot-linux-gnueabihf/releases/download/1.0.0/arm-unknown-linux-gnueabihf.xz
+            archive_name: arm-unknown-linux-gnueabihf.xz
+            unpack_cmd: tar -xJf
+            tc_dir: arm-unknown-linux-gnueabihf
+            target: arm-unknown-linux-gnueabihf
+          - device: a6
+            toolchain_url: https://github.com/penosext/Cloudpan/releases/download/toolchains/armv7-eabihf--uclibc--bleeding-edge-2018.11-1.tar.bz2
+            archive_name: armv7-eabihf--uclibc--bleeding-edge-2018.11-1.tar.bz2
+            unpack_cmd: tar -xjf
+            tc_dir: armv7-eabihf--uclibc--bleeding-edge-2018.11-1
+            target: arm-buildroot-linux-uclibcgnueabihf
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: ''
+
+      - name: Install host dependencies
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y libtool libtool-bin wget xz-utils bzip2 cmake make
+
+      - name: Install cross toolchain (${{ matrix.device }})
+        run: |
+          set -e
+          TC_ROOT="$HOME/toolchain"
+          TC_DIR="$TC_ROOT/${{ matrix.tc_dir }}"
+          TC_ARCHIVE="/tmp/${{ matrix.archive_name }}"
+
+          mkdir -p "$TC_ROOT"
+          rm -rf "$TC_DIR"
+
+          wget -q "${{ matrix.toolchain_url }}" -O "$TC_ARCHIVE"
+          ${{ matrix.unpack_cmd }} "$TC_ARCHIVE" -C "$TC_ROOT"
+
+          if [ ! -x "$TC_DIR/bin/${{ matrix.target }}-gcc" ]; then
+            echo "Unexpected toolchain layout under $TC_ROOT" >&2
+            find "$TC_ROOT" -maxdepth 3 -type d | sort
+            exit 1
+          fi
+
+          chmod -R 755 "$TC_DIR"
+          chmod -R +x "$TC_DIR/bin"
+
+          echo "$TC_DIR/bin" >> "$GITHUB_PATH"
+          echo "CROSS_TOOLCHAIN_PREFIX=$TC_DIR/bin/${{ matrix.target }}-" >> "$GITHUB_ENV"
+          echo "USELESS_PLAYER_DEVICE=${{ matrix.device }}" >> "$GITHUB_ENV"
+          "$TC_DIR/bin/${{ matrix.target }}-gcc" --version
+
+      - name: Build app
+        run: |
+          set -e
+          chmod -R +x ./tools || true
+          chmod +x ./build.sh
+          ./build.sh
+
+      - name: Collect artifacts
+        run: |
+          set -e
+          OUT_DIR="dist-artifacts/${{ matrix.device }}"
+          mkdir -p "$OUT_DIR"
+
+          find . -maxdepth 2 -type f -name '*.amr' -exec cp {} "$OUT_DIR" \; || true
+
+          if [ -d ./libs ]; then
+            mkdir -p "$OUT_DIR/libs"
+            find ./libs -maxdepth 1 -type f -name '*.so' -exec cp {} "$OUT_DIR/libs" \; || true
+          fi
+
+          BUILD_DIR="./jsapi/build/${{ matrix.device }}"
+          if [ -d "$BUILD_DIR" ]; then
+            mkdir -p "$OUT_DIR/jsapi-build"
+            find "$BUILD_DIR" -type f \( -name '*.so' -o -name '*.a' \) -exec cp {} "$OUT_DIR/jsapi-build" \; || true
+          fi
+
+          if [ -f ./package.json ]; then
+            cp ./package.json "$OUT_DIR"/
+          fi
+
+      - name: Upload artifacts (${{ matrix.device }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: useless-player-${{ matrix.device }}
+          path: dist-artifacts/${{ matrix.device }}
+          if-no-files-found: warn
+          retention-days: 30
